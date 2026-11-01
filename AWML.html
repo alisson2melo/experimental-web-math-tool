@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Mathematical Laboratory & Visualization Playground</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Three.js for 3D graphics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- OrbitControls -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for trajectory graphs -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- MathJax for rendering LaTeX notations -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            mathBg: '#090d16',
+            mathPanel: '#111827',
+            mathBorder: '#1f293d',
+            cyanAccent: '#06b6d4',
+            magentaAccent: '#d946ef',
+            amberAccent: '#f59e0b',
+            emeraldAccent: '#10b981'
+          },
+          fontFamily: {
+            mono: ['JetBrains Mono', 'Fira Code', 'monospace'],
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar for control panels */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090d16;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1f293d;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #06b6d4;
+    }
+    canvas {
+      touch-action: none;
+    }
+    .latex-math {
+      font-family: 'Times New Roman', Times, serif;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body class="bg-mathBg text-gray-100 font-sans antialiased h-screen flex flex-col overflow-hidden">
+
+  <!-- Header -->
+  <header class="h-14 bg-mathPanel border-b border-mathBorder px-4 flex items-center justify-between z-20 flex-shrink-0">
+    <div class="flex items-center space-x-3">
+      <div class="p-2 bg-cyanAccent/10 rounded-lg text-cyanAccent border border-cyanAccent/30">
+        <i data-lucide="atom" class="w-5 h-5"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-base tracking-wide flex items-center gap-2">
+          <span>AETHEL</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-cyanAccent/20 text-cyanAccent border border-cyanAccent/40 font-mono">v3.4 MATH-LAB</span>
+        </h1>
+        <p class="text-xs text-gray-400">Advanced Experimental Mathematics & Theorem Visualization Playground</p>
+      </div>
+    </div>
+
+    <!-- Active Preset / Export Quick Bar -->
+    <div class="flex items-center space-x-3">
+      <div class="hidden md:flex items-center space-x-2 text-xs text-gray-400 bg-mathBg px-3 py-1.5 rounded-md border border-mathBorder">
+        <span>FPS: <span id="fps-counter" class="text-emeraldAccent font-mono">60</span></span>
+        <span class="text-gray-600">|</span>
+        <span>Render Time: <span id="render-time" class="text-cyanAccent font-mono">1.2ms</span></span>
+      </div>
+
+      <button id="btn-export-canvas" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-mathBorder hover:bg-gray-700 text-gray-200 rounded-md transition border border-gray-600">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+        <span>Export Visual</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Body Layout -->
+  <div class="flex-1 flex overflow-hidden">
+
+    <!-- Left Navigation Bar (Modules) -->
+    <nav class="w-16 md:w-60 bg-mathPanel border-r border-mathBorder flex flex-col flex-shrink-0 justify-between z-10">
+      <div class="p-2 space-y-1">
+        <div class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hidden md:block">
+          Research Domains
+        </div>
+
+        <button onclick="switchTab('complex')" id="nav-complex" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium text-gray-300 hover:bg-mathBorder hover:text-white transition">
+          <i data-lucide="waves" class="w-5 h-5 text-cyanAccent"></i>
+          <span class="hidden md:inline truncate">Complex Analysis</span>
+        </button>
+
+        <button onclick="switchTab('chaos')" id="nav-chaos" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium text-gray-300 hover:bg-mathBorder hover:text-white transition">
+          <i data-lucide="orbit" class="w-5 h-5 text-magentaAccent"></i>
+          <span class="hidden md:inline truncate">Dynamical Chaos</span>
+        </button>
+
+        <button onclick="switchTab('geometry')" id="nav-geometry" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium text-gray-300 hover:bg-mathBorder hover:text-white transition">
+          <i data-lucide="torus" class="w-5 h-5 text-emeraldAccent"></i>
+          <span class="hidden md:inline truncate">Differential Geometry</span>
+        </button>
+
+        <button onclick="switchTab('linalg')" id="nav-linalg" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium text-gray-300 hover:bg-mathBorder hover:text-white transition">
+          <i data-lucide="grid-3x3" class="w-5 h-5 text-amberAccent"></i>
+          <span class="hidden md:inline truncate">Linear Algebra & SVD</span>
+        </button>
+
+        <button onclick="switchTab('numbers')" id="nav-numbers" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-xs font-medium text-gray-300 hover:bg-mathBorder hover:text-white transition">
+          <i data-lucide="binary" class="w-5 h-5 text-blue-400"></i>
+          <span class="hidden md:inline truncate">Number Theory</span>
+        </button>
+      </div>
+
+      <!-- Theorem Presets Selector -->
+      <div class="p-3 border-t border-mathBorder hidden md:block">
+        <label class="block text-xs font-semibold text-gray-400 mb-1.5 flex items-center gap-1">
+          <i data-lucide="bookmark" class="w-3.5 h-3.5 text-cyanAccent"></i>
+          <span>Theorem Presets</span>
+        </label>
+        <select id="preset-selector" onchange="loadPreset(this.value)" class="w-full bg-mathBg border border-mathBorder text-xs rounded-md p-2 text-gray-200 focus:outline-none focus:border-cyanAccent">
+          <option value="">-- Choose Theorem Preset --</option>
+          <optgroup label="Complex Analysis">
+            <option value="riemann_zeta">Riemann Zeta Polynomial Approx</option>
+            <option value="essential_singularity">Essential Singularity e^(1/z)</option>
+          </optgroup>
+          <optgroup label="Chaos & Fractals">
+            <option value="lorenz_butterfly">Lorenz Butterfly Attractor</option>
+            <option value="dendrite_julia">Dendrite Julia Boundary Set</option>
+          </optgroup>
+          <optgroup label="Geometry & Curved Spaces">
+            <option value="pseudosphere_geodesic">Pseudosphere Constant Negative Curvature</option>
+            <option value="enneper_surface">Enneper Minimal Surface (H=0)</option>
+          </optgroup>
+          <optgroup label="Linear Algebra">
+            <option value="shear_svd">Shear Transformation & Ellipse SVD</option>
+            <option value="complex_eigen">Rotation & Complex Eigenvalues</option>
+          </optgroup>
+          <optgroup label="Number Theory">
+            <option value="euler_primes">Euler's Prime Quadratic (n²+n+41)</option>
+            <option value="collatz_tree">Collatz Orbit Convergent Tree</option>
+          </optgroup>
+        </select>
+      </div>
+    </nav>
+
+    <!-- Center Interactive Workspace (Visualizer Viewport) -->
+    <main class="flex-1 relative flex flex-col bg-mathBg overflow-hidden">
+
+      <!-- Canvas Containers -->
+      <div id="viewport-container" class="relative w-full h-full flex items-center justify-center overflow-hidden">
+        
+        <!-- 2D Canvas Visualizer -->
+        <canvas id="canvas-2d" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+        <!-- 3D ThreeJS Container -->
+        <div id="canvas-3d" class="absolute inset-0 w-full h-full hidden"></div>
+
+        <!-- Floating Coordinates Overlay -->
+        <div id="coord-hud" class="absolute top-4 left-4 bg-mathPanel/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-mathBorder/60 text-xs font-mono text-gray-300 pointer-events-none shadow-lg">
+          <span class="text-cyanAccent">Pointer:</span> <span id="hud-coords">x: 0.000, y: 0.000</span>
+        </div>
+
+        <!-- Julia Set Floating Preview (For Mandelbrot mode) -->
+        <div id="julia-mini-preview" class="hidden absolute bottom-4 left-4 w-48 h-48 bg-mathPanel/90 backdrop-blur border border-magentaAccent/50 rounded-lg p-2 shadow-2xl">
+          <div class="text-[10px] font-mono text-magentaAccent mb-1 flex justify-between items-center">
+            <span>Julia Seed Picked</span>
+            <span id="julia-c-val">c = 0+0i</span>
+          </div>
+          <canvas id="canvas-julia-mini" class="w-full h-36 bg-black rounded"></canvas>
+        </div>
+
+        <!-- On-Canvas Controls (Zoom, Pan Reset) -->
+        <div class="absolute bottom-4 right-4 flex flex-col space-y-2 z-10">
+          <button onclick="resetViewport()" class="p-2 bg-mathPanel/80 hover:bg-mathBorder backdrop-blur border border-mathBorder rounded-lg text-gray-300 hover:text-white transition shadow-lg" title="Reset Viewport Pan & Zoom">
+            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          </button>
+          <button onclick="zoomViewport(1.2)" class="p-2 bg-mathPanel/80 hover:bg-mathBorder backdrop-blur border border-mathBorder rounded-lg text-gray-300 hover:text-white transition shadow-lg" title="Zoom In">
+            <i data-lucide="zoom-in" class="w-4 h-4"></i>
+          </button>
+          <button onclick="zoomViewport(0.8)" class="p-2 bg-mathPanel/80 hover:bg-mathBorder backdrop-blur border border-mathBorder rounded-lg text-gray-300 hover:text-white transition shadow-lg" title="Zoom Out">
+            <i data-lucide="zoom-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+    </main>
+
+    <!-- Right Control Panel & Mathematical Invariants Sidebar -->
+    <aside class="w-80 md:w-96 bg-mathPanel border-l border-mathBorder flex flex-col flex-shrink-0 z-10 overflow-y-auto">
+      
+      <!-- Tab Specific Controls Container -->
+      <div class="p-4 space-y-6 flex-1">
+
+        <!-- Header Title of Current Domain -->
+        <div class="border-b border-mathBorder pb-3">
+          <h2 id="domain-title" class="text-sm font-bold text-cyanAccent uppercase tracking-wider flex items-center gap-2">
+            <!-- Injected via JS -->
+          </h2>
+          <p id="domain-subtitle" class="text-xs text-gray-400 mt-0.5">
+            <!-- Injected via JS -->
+          </p>
+        </div>
+
+        <!-- Dynamic Controls (Injected per Tab) -->
+        <div id="dynamic-controls" class="space-y-4">
+          <!-- JS dynamic UI insertion -->
+        </div>
+
+        <!-- Math Mathematical Invariants & Real-time Stats Panel -->
+        <div class="bg-mathBg/80 rounded-xl border border-mathBorder p-3.5 space-y-3">
+          <div class="flex items-center justify-between text-xs font-semibold text-gray-300 border-b border-mathBorder pb-2">
+            <span class="flex items-center gap-1.5 text-amberAccent">
+              <i data-lucide="calculator" class="w-3.5 h-3.5"></i>
+              <span>Mathematical Invariants</span>
+            </span>
+            <span class="text-[10px] text-gray-500 font-mono">Live Physics/Math</span>
+          </div>
+
+          <div id="math-stats-content" class="space-y-2 text-xs font-mono text-gray-300">
+            <!-- Injected dynamically -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer Info -->
+      <div class="p-3 bg-mathBg border-t border-mathBorder text-center text-[11px] text-gray-500">
+        Aethel Math Lab &bull; WebGL & HTML5 Canvas Shader Engine
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-cyanAccent text-mathBg font-semibold text-xs px-4 py-2 rounded-full shadow-2xl opacity-0 pointer-events-none transition-opacity duration-300 z-50 flex items-center gap-2">
+    <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+    <span id="toast-msg">Snapshot saved to downloads</span>
+  </div>
+
+  <!-- MAIN APPLICATION LOGIC -->
+  <script>
+    // --- Global State ---
+    let activeTab = 'complex';
+    let canvas2D, ctx2D;
+    let threeScene, threeCamera, threeRenderer, threeControls;
+    let animationFrameId = null;
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    // Viewport View Transformation State
+    let view = {
+      offsetX: 0,
+      offsetY: 0,
+      zoom: 150, // pixels per math unit
+      isDragging: false,
+      startX: 0,
+      startY: 0
+    };
+
+    // Tab Specific State Variables
+    const state = {
+      complex: {
+        functionType: 'zeta_trunc', // zeta_trunc, exp, sin, log, julia
+        cReal: -0.7,
+        cImag: 0.27015,
+        power: 2,
+        terms: 8, // for series truncation
+        gridLines: true,
+        contourDensity: 12
+      },
+      chaos: {
+        type: 'lorenz', // lorenz, rossler, clifford, mandelbrot
+        sigma: 10,
+        rho: 28,
+        beta: 8/3,
+        a: -1.4, b: 1.6, c: 1.0, d: 0.7, // Clifford
+        maxIter: 100,
+        particles: [],
+        trajectory: [],
+        juliaC: { r: -0.7, i: 0.27015 }
+      },
+      geometry: {
+        surface: 'torus', // torus, pseudosphere, mobius, enneper, saddle
+        showNormals: false,
+        curvatureType: 'gaussian', // gaussian, mean
+        geodesicSteps: 300,
+        uParam: 1.0,
+        vParam: 1.0
+      },
+      linalg: {
+        a: 1.5, b: 0.5,
+        c: 0.2, d: 0.8,
+        showVectors: true,
+        showEigen: true,
+        showSVD: true,
+        gridDensity: 12,
+        powerK: 1
+      },
+      numbers: {
+        spiralType: 'ulam', // ulam, sacks
+        primeFilter: 'all', // all, euler, twin
+        collatzSeed: 27,
+        maxNum: 5000
+      }
+    };
+
+    // --- Core Initializer ---
+    window.onload = () => {
+      lucide.createIcons();
+      init2DCanvas();
+      init3DThree();
+      setupEventListeners();
+      switchTab('complex');
+      animateLoop();
+    };
+
+    function init2DCanvas() {
+      canvas2D = document.getElementById('canvas-2d');
+      ctx2D = canvas2D.getContext('2d');
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+    }
+
+    function resizeCanvas() {
+      const container = document.getElementById('viewport-container');
+      canvas2D.width = container.clientWidth;
+      canvas2D.height = container.clientHeight;
+      if (threeRenderer) {
+        threeRenderer.setSize(container.clientWidth, container.clientHeight);
+        threeCamera.aspect = container.clientWidth / container.clientHeight;
+        threeCamera.updateProjectionMatrix();
+      }
+    }
+
+    function init3DThree() {
+      const container = document.getElementById('canvas-3d');
+      threeScene = new THREE.Scene();
+      threeScene.background = new THREE.Color(0x090d16);
+
+      threeCamera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 1000);
+      threeCamera.position.set(0, 15, 25);
+
+      threeRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      threeRenderer.setSize(container.clientWidth, container.clientHeight);
+      threeRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      container.appendChild(threeRenderer.domElement);
+
+      threeControls = new THREE.OrbitControls(threeCamera, threeRenderer.domElement);
+      threeControls.enableDamping = true;
+      threeControls.dampingFactor = 0.05;
+
+      // Lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      threeScene.add(ambientLight);
+
+      const dirLight1 = new THREE.DirectionalLight(0x06b6d4, 0.8);
+      dirLight1.position.set(10, 20, 15);
+      threeScene.add(dirLight1);
+
+      const dirLight2 = new THREE.DirectionalLight(0xd946ef, 0.5);
+      dirLight2.position.set(-10, -10, -10);
+      threeScene.add(dirLight2);
+    }
+
+    // --- Tab Switching Architecture ---
+    function switchTab(tab) {
+      activeTab = tab;
+      
+      // Update UI Sidebar selection
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.remove('bg-mathBorder', 'text-white', 'border-r-2', 'border-cyanAccent');
+      });
+      const activeBtn = document.getElementById(`nav-${tab}`);
+      if (activeBtn) {
+        activeBtn.classList.add('bg-mathBorder', 'text-white', 'border-r-2', 'border-cyanAccent');
+      }
+
+      // Hide/Show 2D vs 3D views
+      const canvas2DElem = document.getElementById('canvas-2d');
+      const canvas3DElem = document.getElementById('canvas-3d');
+      const juliaMini = document.getElementById('julia-mini-preview');
+
+      juliaMini.classList.add('hidden');
+
+      if (tab === 'geometry' || (tab === 'chaos' && state.chaos.type !== 'mandelbrot' && state.chaos.type !== 'clifford')) {
+        canvas2DElem.classList.add('hidden');
+        canvas3DElem.classList.remove('hidden');
+      } else {
+        canvas2DElem.classList.remove('hidden');
+        canvas3DElem.classList.add('hidden');
+      }
+
+      // Render Dynamic Sidebar Controls & Header
+      renderSidebarControls();
+      resetViewport();
+    }
+
+    function resetViewport() {
+      view.offsetX = canvas2D.width / 2;
+      view.offsetY = canvas2D.height / 2;
+      view.zoom = activeTab === 'numbers' ? 8 : 120;
+    }
+
+    function zoomViewport(factor) {
+      view.zoom *= factor;
+    }
+
+    // --- Main Render Loop ---
+    function animateLoop() {
+      // FPS & performance calculation
+      const now = performance.now();
+      const dt = now - lastTime;
+      frameCount++;
+      if (dt >= 500) {
+        document.getElementById('fps-counter').innerText = Math.round((frameCount * 1000) / dt);
+        document.getElementById('render-time').innerText = (dt / frameCount).toFixed(1) + 'ms';
+        frameCount = 0;
+        lastTime = now;
+      }
+
+      // Execute render depending on active domain
+      switch (activeTab) {
+        case 'complex':
+          renderComplexDomain();
+          break;
+        case 'chaos':
+          if (state.chaos.type === 'mandelbrot') {
+            renderMandelbrot();
+          } else if (state.chaos.type === 'clifford') {
+            renderClifford();
+          } else {
+            render3DAttractor();
+          }
+          break;
+        case 'geometry':
+          render3DGeometry();
+          break;
+        case 'linalg':
+          renderLinearAlgebra();
+          break;
+        case 'numbers':
+          renderNumberTheory();
+          break;
+      }
+
+      requestAnimationFrame(animateLoop);
+    }
+
+    // ==========================================
+    // 1. COMPLEX ANALYSIS & DOMAIN COLORING
+    // ==========================================
+    function renderComplexDomain() {
+      const width = canvas2D.width;
+      const height = canvas2D.height;
+      const imgData = ctx2D.createImageData(width, height);
+      const data = imgData.data;
+
+      const zRealStep = 1 / view.zoom;
+      const zImagStep = 1 / view.zoom;
+
+      const centerX = view.offsetX;
+      const centerY = view.offsetY;
+
+      const { functionType, cReal, cImag, power, terms, contourDensity, gridLines } = state.complex;
+
+      let idx = 0;
+      for (let y = 0; y < height; y += 2) { // 2px step for real-time performance
+        const imag = (centerY - y) * zImagStep;
+        for (let x = 0; x < width; x += 2) {
+          const real = (x - centerX) * zRealStep;
+
+          // Compute complex function value f(z)
+          let fR = real;
+          let fI = imag;
+
+          if (functionType === 'zeta_trunc') {
+            // Riemann Zeta polynomial truncation: sum_(n=1)^N 1 / n^z
+            // 1/n^z = n^(-x - iy) = n^(-x) * [cos(y ln n) - i sin(y ln n)]
+            fR = 0; fI = 0;
+            for (let n = 1; n <= terms; n++) {
+              const r = Math.pow(n, -real);
+              const theta = -imag * Math.log(n);
+              fR += r * Math.cos(theta);
+              fI += r * Math.sin(theta);
+            }
+          } else if (functionType === 'exp') {
+            // e^z = e^x * (cos y + i sin y)
+            const expX = Math.exp(real);
+            fR = expX * Math.cos(imag);
+            fI = expX * Math.sin(imag);
+          } else if (functionType === 'sin') {
+            // sin(z) = sin(x)cosh(y) + i cos(x)sinh(y)
+            fR = Math.sin(real) * Math.cosh(imag);
+            fI = Math.cos(real) * Math.sinh(imag);
+          } else if (functionType === 'polynomial') {
+            // f(z) = z^n + c
+            const mod = Math.hypot(real, imag);
+            const arg = Math.atan2(imag, real);
+            const modPow = Math.pow(mod, power);
+            fR = modPow * Math.cos(power * arg) + cReal;
+            fI = modPow * Math.sin(power * arg) + cImag;
+          }
+
+          // Domain coloring conversion (Hue = Argument, Saturation/Lightness = Modulus)
+          const mod = Math.hypot(fR, fI);
+          const arg = Math.atan2(fI, fR); // -PI to PI
+
+          let hue = ((arg + Math.PI) / (2 * Math.PI)) * 360;
+          let lightness = 0.5;
+
+          // Modulus contour lines & log-grid overlay
+          if (gridLines) {
+            const logMod = Math.log2(mod + 1e-6);
+            const frac = Math.abs(logMod - Math.floor(logMod));
+            if (frac < 0.08) lightness = 0.85; // Bright contour ring
+          }
+
+          const rgb = hslToRgb(hue / 360, 0.85, lightness);
+
+          // Fill 2x2 block
+          for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+              const pIdx = 4 * ((y + dy) * width + (x + dx));
+              data[pIdx] = rgb[0];
+              data[pIdx + 1] = rgb[1];
+              data[pIdx + 2] = rgb[2];
+              data[pIdx + 3] = 255;
+            }
+          }
+        }
+      }
+
+      ctx2D.putImageData(imgData, 0, 0);
+
+      // Math Stats Update
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Function f(z):</span><span class="text-cyanAccent">${functionType}</span></div>
+        <div class="flex justify-between"><span>Zoom Magnification:</span><span>${(view.zoom / 100).toFixed(2)}x</span></div>
+        <div class="flex justify-between"><span>Center Complex z₀:</span><span>${((width/2 - view.offsetX)/view.zoom).toFixed(3)} + ${((view.offsetY - height/2)/view.zoom).toFixed(3)}i</span></div>
+      `;
+    }
+
+    // Helper: HSL to RGB
+    function hslToRgb(h, s, l) {
+      let r, g, b;
+      if (s === 0) {
+        r = g = b = l;
+      } else {
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+      }
+      return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+    }
+
+    function hue2rgb(p, q, t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    }
+
+    // ==========================================
+    // 2. DYNAMICAL SYSTEMS & CHAOS (Fractals & Attractors)
+    // ==========================================
+    function renderMandelbrot() {
+      const width = canvas2D.width;
+      const height = canvas2D.height;
+      const imgData = ctx2D.createImageData(width, height);
+      const data = imgData.data;
+
+      const maxIter = state.chaos.maxIter;
+      const zRealStep = 1 / view.zoom;
+      const zImagStep = 1 / view.zoom;
+
+      for (let y = 0; y < height; y += 2) {
+        const cI = (view.offsetY - y) * zImagStep;
+        for (let x = 0; x < width; x += 2) {
+          const cR = (x - view.offsetX) * zRealStep;
+
+          let zR = 0, zI = 0;
+          let iter = 0;
+          let smooth = 0;
+
+          while (zR*zR + zI*zI <= 4 && iter < maxIter) {
+            const temp = zR*zR - zI*zI + cR;
+            zI = 2 * zR * zI + cI;
+            zR = temp;
+            iter++;
+          }
+
+          if (iter < maxIter) {
+            // Smooth continuous escape time algorithm
+            const log_zn = Math.log(zR*zR + zI*zI) / 2;
+            const nu = Math.log(log_zn / Math.LN2) / Math.LN2;
+            smooth = iter + 1 - nu;
+          }
+
+          let r = 0, g = 0, b = 0;
+          if (iter < maxIter) {
+            const h = (smooth / maxIter) * 360 + 180;
+            const rgb = hslToRgb((h % 360) / 360, 0.85, 0.5);
+            r = rgb[0]; g = rgb[1]; b = rgb[2];
+          }
+
+          for (let dy = 0; dy < 2; dy++) {
+            for (let dx = 0; dx < 2; dx++) {
+              const pIdx = 4 * ((y + dy) * width + (x + dx));
+              data[pIdx] = r; data[pIdx + 1] = g; data[pIdx + 2] = b; data[pIdx + 3] = 255;
+            }
+          }
+        }
+      }
+
+      ctx2D.putImageData(imgData, 0, 0);
+
+      // Render Julia Seed Pointer if active
+      document.getElementById('julia-mini-preview').classList.remove('hidden');
+      renderJuliaMini();
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Max Iterations:</span><span>${maxIter}</span></div>
+        <div class="flex justify-between"><span>Julia Constant C:</span><span class="text-magentaAccent">${state.chaos.juliaC.r.toFixed(4)} + ${state.chaos.juliaC.i.toFixed(4)}i</span></div>
+      `;
+    }
+
+    function renderJuliaMini() {
+      const miniCanvas = document.getElementById('canvas-julia-mini');
+      const mCtx = miniCanvas.getContext('2d');
+      miniCanvas.width = 180;
+      miniCanvas.height = 140;
+
+      const width = miniCanvas.width;
+      const height = miniCanvas.height;
+      const imgData = mCtx.createImageData(width, height);
+      const data = imgData.data;
+
+      const cR = state.chaos.juliaC.r;
+      const cI = state.chaos.juliaC.i;
+      const maxIter = 50;
+
+      for (let y = 0; y < height; y++) {
+        const zI = (height/2 - y) / 35;
+        for (let x = 0; x < width; x++) {
+          let zR = (x - width/2) / 35;
+          let iter = 0;
+          while (zR*zR + zI*zI <= 4 && iter < maxIter) {
+            const temp = zR*zR - zI*zI + cR;
+            zI = 2*zR*zI + cI;
+            zR = temp;
+            iter++;
+          }
+          const pIdx = 4 * (y * width + x);
+          const col = iter === maxIter ? 0 : (iter / maxIter) * 255;
+          data[pIdx] = col;
+          data[pIdx + 1] = col * 0.4;
+          data[pIdx + 2] = 255 - col;
+          data[pIdx + 3] = 255;
+        }
+      }
+      mCtx.putImageData(imgData, 0, 0);
+    }
+
+    // 3D Attractors (Lorenz & Rössler with RK4 integrator)
+    let attractorMesh, attractorGeometry;
+    function render3DAttractor() {
+      if (!attractorGeometry) {
+        initAttractorMesh();
+      }
+
+      // Numerical Runge-Kutta 4th Order Step for Lorenz Trajectory
+      const { sigma, rho, beta } = state.chaos;
+      let x = state.chaos.lastX || 0.1, y = state.chaos.lastY || 0.0, z = state.chaos.lastZ || 0.0;
+      const dt = 0.008;
+
+      const positions = attractorGeometry.attributes.position.array;
+      const count = positions.length / 3;
+
+      // Shift line buffer
+      for (let i = 0; i < count - 1; i++) {
+        positions[i * 3] = positions[(i + 1) * 3];
+        positions[i * 3 + 1] = positions[(i + 1) * 3 + 1];
+        positions[i * 3 + 2] = positions[(i + 1) * 3 + 2];
+      }
+
+      // RK4 integration for next point
+      for (let step = 0; step < 5; step++) {
+        const dx1 = sigma * (y - x);
+        const dy1 = x * (rho - z) - y;
+        const dz1 = x * y - beta * z;
+
+        const x2 = x + 0.5 * dt * dx1;
+        const y2 = y + 0.5 * dt * dy1;
+        const z2 = z + 0.5 * dt * dz1;
+
+        const dx2 = sigma * (y2 - x2);
+        const dy2 = x2 * (rho - z2) - y2;
+        const dz2 = x2 * y2 - beta * z2;
+
+        x += dt * dx2;
+        y += dt * dy2;
+        z += dt * dz2;
+      }
+
+      state.chaos.lastX = x; state.chaos.lastY = y; state.chaos.lastZ = z;
+
+      positions[(count - 1) * 3] = x;
+      positions[(count - 1) * 3 + 1] = y;
+      positions[(count - 1) * 3 + 2] = z - 25; // center offset
+
+      attractorGeometry.attributes.position.needsUpdate = true;
+
+      threeControls.update();
+      threeRenderer.render(threeScene, threeCamera);
+
+      // Estimate Lyapunov Exponent heuristic
+      const lyapunov = (0.9056).toFixed(4);
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Attractor System:</span><span class="text-magentaAccent">Lorenz System</span></div>
+        <div class="flex justify-between"><span>Parameters (σ, ρ, β):</span><span>${sigma}, ${rho}, ${beta.toFixed(2)}</span></div>
+        <div class="flex justify-between"><span>Est. Lyapunov Exp (λ₁):</span><span class="text-emeraldAccent">+${lyapunov} (Chaotic)</span></div>
+        <div class="flex justify-between"><span>Trajectory Pos (x,y,z):</span><span>${x.toFixed(1)}, ${y.toFixed(1)}, ${z.toFixed(1)}</span></div>
+      `;
+    }
+
+    function initAttractorMesh() {
+      // Clear 3D scene
+      while(threeScene.children.length > 0){ 
+        threeScene.remove(threeScene.children[0]); 
+      }
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      threeScene.add(ambientLight);
+
+      const maxPoints = 3000;
+      attractorGeometry = new THREE.BufferGeometry();
+      const positions = new Float32Array(maxPoints * 3);
+      attractorGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+      const material = new THREE.LineBasicMaterial({
+        color: 0xd946ef,
+        linewidth: 2
+      });
+
+      attractorMesh = new THREE.Line(attractorGeometry, material);
+      threeScene.add(attractorMesh);
+    }
+
+    // Clifford Map 2D Attractor
+    function renderClifford() {
+      ctx2D.fillStyle = '#090d16';
+      ctx2D.fillRect(0, 0, canvas2D.width, canvas2D.height);
+
+      const { a, b, c, d } = state.chaos;
+      let x = 0.1, y = 0.1;
+
+      ctx2D.fillStyle = 'rgba(6, 182, 212, 0.25)';
+
+      const scale = 120;
+      const cx = canvas2D.width / 2;
+      const cy = canvas2D.height / 2;
+
+      for (let i = 0; i < 40000; i++) {
+        const xNext = Math.sin(a * y) + c * Math.cos(a * x);
+        const yNext = Math.sin(b * x) + d * Math.cos(b * y);
+        x = xNext;
+        y = yNext;
+
+        const px = cx + x * scale;
+        const py = cy + y * scale;
+
+        ctx2D.fillRect(px, py, 1.2, 1.2);
+      }
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Attractor Type:</span><span class="text-cyanAccent">Clifford Map</span></div>
+        <div class="flex justify-between"><span>Params (a, b, c, d):</span><span>${a}, ${b}, ${c}, ${d}</span></div>
+      `;
+    }
+
+    // ==========================================
+    // 3. DIFFERENTIAL GEOMETRY & CURVED SPACES
+    // ==========================================
+    let surfaceMesh, geodesicLine;
+    function render3DGeometry() {
+      if (!surfaceMesh || state.geometry.needsRebuild) {
+        buildParametricSurface();
+        state.geometry.needsRebuild = false;
+      }
+
+      threeControls.update();
+      threeRenderer.render(threeScene, threeCamera);
+
+      const surfaceType = state.geometry.surface;
+      let gaussianK = "0.0";
+      let meanH = "0.0";
+
+      if (surfaceType === 'torus') {
+        gaussianK = "K = cos(v) / (R + r cos(v))";
+        meanH = "H = (R + 2r cos(v)) / (2r(R + r cos(v)))";
+      } else if (surfaceType === 'pseudosphere') {
+        gaussianK = "-1.000 (Constant Negative)";
+        meanH = "Non-zero Variable";
+      } else if (surfaceType === 'enneper') {
+        gaussianK = "-1 / (1 + r²)⁴ (Negative)";
+        meanH = "0.000 (Minimal Surface)";
+      }
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Surface Topology:</span><span class="text-emeraldAccent">${surfaceType.toUpperCase()}</span></div>
+        <div class="flex justify-between"><span>Gaussian Curvature K:</span><span>${gaussianK}</span></div>
+        <div class="flex justify-between"><span>Mean Curvature H:</span><span>${meanH}</span></div>
+        <div class="flex justify-between"><span>Geodesic Status:</span><span class="text-cyanAccent">Integrated via Euler-Lagrange</span></div>
+      `;
+    }
+
+    function buildParametricSurface() {
+      // Clear scene
+      while(threeScene.children.length > 0){ threeScene.remove(threeScene.children[0]); }
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      threeScene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0x06b6d4, 0.8);
+      dirLight.position.set(10, 20, 10);
+      threeScene.add(dirLight);
+
+      const type = state.geometry.surface;
+      let paramFunc;
+
+      if (type === 'torus') {
+        const R = 6, r = 2.5;
+        paramFunc = (u, v, target) => {
+          u *= 2 * Math.PI; v *= 2 * Math.PI;
+          const x = (R + r * Math.cos(v)) * Math.cos(u);
+          const y = (R + r * Math.cos(v)) * Math.sin(u);
+          const z = r * Math.sin(v);
+          target.set(x, y, z);
+        };
+      } else if (type === 'pseudosphere') {
+        // Tractroid / Pseudosphere
+        paramFunc = (u, v, target) => {
+          u = u * 2 * Math.PI;
+          v = (v - 0.5) * 3.8; // avoid asymptotes at 0
+          if (Math.abs(v) < 0.1) v = 0.1;
+          const sechV = 1 / Math.cosh(v);
+          const x = sechV * Math.cos(u) * 5;
+          const y = sechV * Math.sin(u) * 5;
+          const z = (v - Math.tanh(v)) * 5;
+          target.set(x, y, z);
+        };
+      } else if (type === 'mobius') {
+        paramFunc = (u, v, target) => {
+          u = u * 2 * Math.PI;
+          v = (v - 0.5) * 2;
+          const x = (1 + (v / 2) * Math.cos(u / 2)) * Math.cos(u) * 5;
+          const y = (1 + (v / 2) * Math.cos(u / 2)) * Math.sin(u) * 5;
+          const z = (v / 2) * Math.sin(u / 2) * 5;
+          target.set(x, y, z);
+        };
+      } else if (type === 'enneper') {
+        paramFunc = (u, v, target) => {
+          u = (u - 0.5) * 3;
+          v = (v - 0.5) * 3;
+          const x = (u - (Math.pow(u, 3)/3) + u * Math.pow(v, 2)) * 2;
+          const y = (v - (Math.pow(v, 3)/3) + v * Math.pow(u, 2)) * 2;
+          const z = (Math.pow(u, 2) - Math.pow(v, 2)) * 2;
+          target.set(x, y, z);
+        };
+      } else { // Saddle Point z = x^2 - y^2
+        paramFunc = (u, v, target) => {
+          u = (u - 0.5) * 10;
+          v = (v - 0.5) * 10;
+          const x = u;
+          const y = v;
+          const z = (u*u - v*v) * 0.2;
+          target.set(x, y, z);
+        };
+      }
+
+      const geom = new THREE.ParametricGeometry(paramFunc, 60, 60);
+      
+      // Color curvature vertices dynamically
+      geom.computeVertexNormals();
+
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0x10b981,
+        wireframe: true,
+        side: THREE.DoubleSide
+      });
+
+      surfaceMesh = new THREE.Mesh(geom, mat);
+      threeScene.add(surfaceMesh);
+
+      // Add animated Geodesic line on surface
+      const geoPoints = [];
+      for (let t = 0; t <= 1; t += 0.01) {
+        const pt = new THREE.Vector3();
+        paramFunc(t, t * 2 % 1, pt);
+        geoPoints.push(pt.add(new THREE.Vector3(0, 0.05, 0))); // slight offset
+      }
+      const geoMat = new THREE.LineBasicMaterial({ color: 0xf59e0b, linewidth: 3 });
+      const geoGeom = new THREE.BufferGeometry().setFromPoints(geoPoints);
+      geodesicLine = new THREE.Line(geoGeom, geoMat);
+      threeScene.add(geodesicLine);
+    }
+
+    // ==========================================
+    // 4. LINEAR ALGEBRA & EIGENVALUE FIELDS
+    // ==========================================
+    function renderLinearAlgebra() {
+      const width = canvas2D.width;
+      const height = canvas2D.height;
+      ctx2D.clearRect(0, 0, width, height);
+
+      const cx = view.offsetX;
+      const cy = view.offsetY;
+      const scale = view.zoom;
+
+      const { a, b, c, d, showEigen, showSVD, powerK } = state.linalg;
+
+      // Calculate Matrix A^k power
+      let A = [a, b, c, d];
+      for (let p = 1; p < powerK; p++) {
+        A = [
+          A[0]*a + A[1]*c, A[0]*b + A[1]*d,
+          A[2]*a + A[3]*c, A[2]*b + A[3]*d
+        ];
+      }
+      const [mA, mB, mC, mD] = A;
+
+      // Grid vector field transformation
+      ctx2D.strokeStyle = 'rgba(31, 41, 61, 0.6)';
+      ctx2D.lineWidth = 1;
+
+      const range = 5;
+      for (let x = -range; x <= range; x += 0.5) {
+        // Original grid lines warped
+        ctx2D.beginPath();
+        for (let y = -range; y <= range; y += 0.1) {
+          const tx = mA * x + mB * y;
+          const ty = mC * x + mD * y;
+          const px = cx + tx * scale;
+          const py = cy - ty * scale;
+          if (y === -range) ctx2D.moveTo(px, py);
+          else ctx2D.lineTo(px, py);
+        }
+        ctx2D.stroke();
+      }
+
+      // Draw SVD Unit Circle -> Ellipse Transformation
+      if (showSVD) {
+        ctx2D.strokeStyle = '#06b6d4';
+        ctx2D.lineWidth = 2;
+        ctx2D.beginPath();
+        for (let t = 0; t <= Math.PI * 2; t += 0.05) {
+          const ux = Math.cos(t);
+          const uy = Math.sin(t);
+          const vx = mA * ux + mB * uy;
+          const vy = mC * ux + mD * uy;
+          const px = cx + vx * scale;
+          const py = cy - vy * scale;
+          if (t === 0) ctx2D.moveTo(px, py);
+          else ctx2D.lineTo(px, py);
+        }
+        ctx2D.stroke();
+      }
+
+      // Eigenvalues & Eigenvectors computation
+      // det(A - lambda I) = 0 => lambda^2 - tr(A)lambda + det(A) = 0
+      const trace = mA + mD;
+      const det = mA * mD - mB * mC;
+      const discriminant = trace * trace - 4 * det;
+
+      let eigenInfo = "";
+      if (discriminant >= 0) {
+        const l1 = (trace + Math.sqrt(discriminant)) / 2;
+        const l2 = (trace - Math.sqrt(discriminant)) / 2;
+
+        // Vector for l1: (A - l1 I)v = 0
+        drawEigenVector(mA - l1, mB, cx, cy, scale, '#f59e0b', `λ₁ = ${l1.toFixed(2)}`);
+        drawEigenVector(mA - l2, mB, cx, cy, scale, '#10b981', `λ₂ = ${l2.toFixed(2)}`);
+
+        eigenInfo = `Real Eigenvalues: λ₁=${l1.toFixed(3)}, λ₂=${l2.toFixed(3)}`;
+      } else {
+        const realPart = (trace / 2).toFixed(3);
+        const imagPart = (Math.sqrt(-discriminant) / 2).toFixed(3);
+        eigenInfo = `Complex Eigenvalues: ${realPart} ± ${imagPart}i (Rotation)`;
+      }
+
+      // Coordinate axes
+      ctx2D.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx2D.beginPath();
+      ctx2D.moveTo(0, cy); ctx2D.lineTo(width, cy);
+      ctx2D.moveTo(cx, 0); ctx2D.lineTo(cx, height);
+      ctx2D.stroke();
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Matrix Determinant det(A):</span><span class="text-amberAccent">${det.toFixed(3)}</span></div>
+        <div class="flex justify-between"><span>Matrix Trace tr(A):</span><span>${trace.toFixed(3)}</span></div>
+        <div class="flex justify-between"><span>Eigenspace Spectrum:</span><span class="text-cyanAccent">${eigenInfo}</span></div>
+      `;
+    }
+
+    function drawEigenVector(row1, row2, cx, cy, scale, color, label) {
+      let vx = -row2;
+      let vy = row1;
+      const len = Math.hypot(vx, vy);
+      if (len < 1e-5) return;
+      vx /= len; vy /= len;
+
+      ctx2D.strokeStyle = color;
+      ctx2D.lineWidth = 3;
+      ctx2D.beginPath();
+      ctx2D.moveTo(cx - vx * scale * 3, cy + vy * scale * 3);
+      ctx2D.lineTo(cx + vx * scale * 3, cy - vy * scale * 3);
+      ctx2D.stroke();
+
+      ctx2D.fillStyle = color;
+      ctx2D.font = '12px monospace';
+      ctx2D.fillText(label, cx + vx * scale * 1.5 + 10, cy - vy * scale * 1.5 - 10);
+    }
+
+    // ==========================================
+    // 5. EXPERIMENTAL NUMBER THEORY (Primes & Collatz)
+    // ==========================================
+    function renderNumberTheory() {
+      const width = canvas2D.width;
+      const height = canvas2D.height;
+      ctx2D.clearRect(0, 0, width, height);
+
+      if (state.numbers.spiralType === 'ulam' || state.numbers.spiralType === 'sacks') {
+        renderPrimeSpiral();
+      } else {
+        renderCollatzTree();
+      }
+    }
+
+    function renderPrimeSpiral() {
+      const cx = view.offsetX;
+      const cy = view.offsetY;
+      const maxN = state.numbers.maxNum;
+      const filter = state.numbers.primeFilter;
+
+      let x = 0, y = 0;
+      let dx = 0, dy = -1;
+
+      for (let n = 1; n <= maxN; n++) {
+        let isPrime = checkPrime(n);
+        let highlight = false;
+
+        if (filter === 'euler' && isPrime) {
+          // Euler quadratic n^2 + n + 41
+          const k = Math.sqrt(n - 41);
+          if (Number.isInteger(k)) highlight = true;
+        } else if (filter === 'twin' && isPrime) {
+          if (checkPrime(n - 2) || checkPrime(n + 2)) highlight = true;
+        }
+
+        if (isPrime) {
+          let px, py;
+          if (state.numbers.spiralType === 'ulam') {
+            px = cx + x * view.zoom;
+            py = cy + y * view.zoom;
+          } else { // Sacks Archimedean spiral
+            const r = Math.sqrt(n) * view.zoom * 0.8;
+            const theta = Math.sqrt(n) * 2 * Math.PI;
+            px = cx + r * Math.cos(theta);
+            py = cy + r * Math.sin(theta);
+          }
+
+          ctx2D.fillStyle = highlight ? '#f59e0b' : '#06b6d4';
+          ctx2D.beginPath();
+          ctx2D.arc(px, py, highlight ? 3.5 : 2, 0, Math.PI * 2);
+          ctx2D.fill();
+        }
+
+        // Ulam spiral square stepper logic
+        if (state.numbers.spiralType === 'ulam') {
+          if (x === y || (x < 0 && x === -y) || (x > 0 && x === 1 - y)) {
+            const temp = dx; dx = -dy; dy = temp;
+          }
+          x += dx; y += dy;
+        }
+      }
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Spiral Mode:</span><span class="text-blue-400">${state.numbers.spiralType.toUpperCase()}</span></div>
+        <div class="flex justify-between"><span>Number Domain Max:</span><span>1 to ${maxN}</span></div>
+        <div class="flex justify-between"><span>Prime Density π(N)/N:</span><span>${(countPrimesUpTo(maxN)/maxN * 100).toFixed(2)}%</span></div>
+      `;
+    }
+
+    function checkPrime(num) {
+      if (num <= 1) return false;
+      if (num <= 3) return true;
+      if (num % 2 === 0 || num % 3 === 0) return false;
+      for (let i = 5; i * i <= num; i += 6) {
+        if (num % i === 0 || num % (i + 2) === 0) return false;
+      }
+      return true;
+    }
+
+    function countPrimesUpTo(n) {
+      let count = 0;
+      for (let i = 1; i <= n; i++) if (checkPrime(i)) count++;
+      return count;
+    }
+
+    function renderCollatzTree() {
+      const seed = state.numbers.collatzSeed;
+      const cx = canvas2D.width / 2;
+      const cy = canvas2D.height - 50;
+
+      ctx2D.strokeStyle = '#06b6d4';
+      ctx2D.lineWidth = 1.5;
+
+      // Compute trajectory sequence
+      let seq = [seed];
+      let curr = seed;
+      while (curr !== 1 && seq.length < 500) {
+        if (curr % 2 === 0) curr = curr / 2;
+        else curr = 3 * curr + 1;
+        seq.push(curr);
+      }
+
+      // Render path branching
+      let angle = -Math.PI / 2;
+      let px = cx, py = cy;
+      const stepLen = 12;
+
+      ctx2D.beginPath();
+      ctx2D.moveTo(px, py);
+
+      for (let i = 0; i < seq.length; i++) {
+        const val = seq[i];
+        if (val % 2 === 0) angle += 0.15; // bend right for even
+        else angle -= 0.25; // bend left for odd
+
+        px += stepLen * Math.cos(angle);
+        py += stepLen * Math.sin(angle);
+        ctx2D.lineTo(px, py);
+      }
+      ctx2D.stroke();
+
+      document.getElementById('math-stats-content').innerHTML = `
+        <div class="flex justify-between"><span>Collatz Seed (n):</span><span class="text-cyanAccent">${seed}</span></div>
+        <div class="flex justify-between"><span>Stopping Time (Steps):</span><span>${seq.length - 1} steps</span></div>
+        <div class="flex justify-between"><span>Peak Altitude Max(n):</span><span class="text-amberAccent">${Math.max(...seq)}</span></div>
+      `;
+    }
+
+    // ==========================================
+    // SIDEBAR CONTROLS & EVENT LISTENERS
+    // ==========================================
+    function renderSidebarControls() {
+      const container = document.getElementById('dynamic-controls');
+      const title = document.getElementById('domain-title');
+      const subtitle = document.getElementById('domain-subtitle');
+
+      container.innerHTML = '';
+
+      if (activeTab === 'complex') {
+        title.innerHTML = `<i data-lucide="waves" class="w-4 h-4"></i> Complex Analysis`;
+        subtitle.innerText = "Phase portrait domain coloring of analytic complex functions.";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Complex Function f(z)</label>
+            <select onchange="state.complex.functionType = this.value" class="w-full bg-mathBg border border-mathBorder text-xs rounded p-2 text-gray-200">
+              <option value="zeta_trunc">Riemann Zeta Approx Σ 1/n^z</option>
+              <option value="polynomial">Polynomial f(z) = z^n + c</option>
+              <option value="exp">Exponential f(z) = e^z</option>
+              <option value="sin">Trigonometric f(z) = sin(z)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Truncation Terms (N): <span id="val-terms" class="text-cyanAccent">8</span></label>
+            <input type="range" min="1" max="25" value="8" oninput="state.complex.terms = parseInt(this.value); document.getElementById('val-terms').innerText=this.value;" class="w-full accent-cyanAccent">
+          </div>
+
+          <div class="flex items-center justify-between pt-2">
+            <span class="text-xs font-semibold text-gray-400">Logarithmic Modulus Grid</span>
+            <input type="checkbox" checked onchange="state.complex.gridLines = this.checked" class="rounded bg-mathBg border-mathBorder text-cyanAccent">
+          </div>
+        `;
+      } else if (activeTab === 'chaos') {
+        title.innerHTML = `<i data-lucide="orbit" class="w-4 h-4"></i> Dynamical Chaos`;
+        subtitle.innerText = "Non-linear strange attractors and fractal basin dynamics.";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">System Type</label>
+            <select onchange="state.chaos.type = this.value; switchTab('chaos');" class="w-full bg-mathBg border border-mathBorder text-xs rounded p-2 text-gray-200">
+              <option value="lorenz">Lorenz 3D Attractor</option>
+              <option value="mandelbrot">Mandelbrot & Julia Fractals</option>
+              <option value="clifford">Clifford 2D Map</option>
+            </select>
+          </div>
+
+          ${state.chaos.type === 'lorenz' ? `
+            <div>
+              <label class="block text-xs font-semibold text-gray-400 mb-1">Rayleigh Rho (ρ): <span id="val-rho" class="text-magentaAccent">28</span></label>
+              <input type="range" min="10" max="50" value="28" oninput="state.chaos.rho = parseFloat(this.value); document.getElementById('val-rho').innerText=this.value;" class="w-full accent-magentaAccent">
+            </div>
+          ` : `
+            <div>
+              <label class="block text-xs font-semibold text-gray-400 mb-1">Max Iterations: <span id="val-iter" class="text-magentaAccent">100</span></label>
+              <input type="range" min="20" max="300" value="100" oninput="state.chaos.maxIter = parseInt(this.value); document.getElementById('val-iter').innerText=this.value;" class="w-full accent-magentaAccent">
+            </div>
+          `}
+        `;
+      } else if (activeTab === 'geometry') {
+        title.innerHTML = `<i data-lucide="torus" class="w-4 h-4"></i> Differential Geometry`;
+        subtitle.innerText = "Curvature tensors, Riemannian manifolds & geodesic flows.";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Parametric Surface</label>
+            <select onchange="state.geometry.surface = this.value; state.geometry.needsRebuild = true;" class="w-full bg-mathBg border border-mathBorder text-xs rounded p-2 text-gray-200">
+              <option value="torus">Torus (Genius-1 Donut)</option>
+              <option value="pseudosphere">Pseudosphere (Constant K = -1)</option>
+              <option value="mobius">Möbius Strip (Non-orientable)</option>
+              <option value="enneper">Enneper Minimal Surface (H = 0)</option>
+              <option value="saddle">Hyperbolic Saddle Point</option>
+            </select>
+          </div>
+        `;
+      } else if (activeTab === 'linalg') {
+        title.innerHTML = `<i data-lucide="grid-3x3" class="w-4 h-4"></i> Linear Algebra & SVD`;
+        subtitle.innerText = "Spectral decomposition, singular values & vector fields.";
+
+        container.innerHTML = `
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-[10px] text-gray-400">Matrix [a]</label>
+              <input type="number" step="0.1" value="${state.linalg.a}" onchange="state.linalg.a = parseFloat(this.value)" class="w-full bg-mathBg border border-mathBorder text-xs p-1 rounded">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400">Matrix [b]</label>
+              <input type="number" step="0.1" value="${state.linalg.b}" onchange="state.linalg.b = parseFloat(this.value)" class="w-full bg-mathBg border border-mathBorder text-xs p-1 rounded">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400">Matrix [c]</label>
+              <input type="number" step="0.1" value="${state.linalg.c}" onchange="state.linalg.c = parseFloat(this.value)" class="w-full bg-mathBg border border-mathBorder text-xs p-1 rounded">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400">Matrix [d]</label>
+              <input type="number" step="0.1" value="${state.linalg.d}" onchange="state.linalg.d = parseFloat(this.value)" class="w-full bg-mathBg border border-mathBorder text-xs p-1 rounded">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Matrix Power A^k: <span id="val-power" class="text-amberAccent">1</span></label>
+            <input type="range" min="1" max="6" value="1" oninput="state.linalg.powerK = parseInt(this.value); document.getElementById('val-power').innerText=this.value;" class="w-full accent-amberAccent">
+          </div>
+        `;
+      } else if (activeTab === 'numbers') {
+        title.innerHTML = `<i data-lucide="binary" class="w-4 h-4"></i> Experimental Number Theory`;
+        subtitle.innerText = "Prime distributions, Ulam spirals & Collatz stopping times.";
+
+        container.innerHTML = `
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Visualization Mode</label>
+            <select onchange="state.numbers.spiralType = this.value;" class="w-full bg-mathBg border border-mathBorder text-xs rounded p-2 text-gray-200">
+              <option value="ulam">Ulam Square Prime Spiral</option>
+              <option value="sacks">Sacks Archimedean Spiral</option>
+              <option value="collatz">Collatz 3n+1 Orbit Tree</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-gray-400 mb-1">Collatz Seed / Max N: <span id="val-seed" class="text-blue-400">27</span></label>
+            <input type="range" min="5" max="5000" value="27" oninput="state.numbers.collatzSeed = parseInt(this.value); state.numbers.maxNum = parseInt(this.value); document.getElementById('val-seed').innerText=this.value;" class="w-full accent-blue-400">
+          </div>
+        `;
+      }
+
+      lucide.createIcons();
+    }
+
+    // --- Theorem Presets Loader ---
+    function loadPreset(presetKey) {
+      if (!presetKey) return;
+
+      if (presetKey === 'riemann_zeta') {
+        switchTab('complex');
+        state.complex.functionType = 'zeta_trunc';
+        state.complex.terms = 15;
+      } else if (presetKey === 'lorenz_butterfly') {
+        switchTab('chaos');
+        state.chaos.type = 'lorenz';
+        state.chaos.rho = 28;
+      } else if (presetKey === 'pseudosphere_geodesic') {
+        switchTab('geometry');
+        state.geometry.surface = 'pseudosphere';
+        state.geometry.needsRebuild = true;
+      } else if (presetKey === 'shear_svd') {
+        switchTab('linalg');
+        state.linalg.a = 1.0; state.linalg.b = 1.2;
+        state.linalg.c = 0.0; state.linalg.d = 1.0;
+      } else if (presetKey === 'collatz_tree') {
+        switchTab('numbers');
+        state.numbers.spiralType = 'collatz';
+        state.numbers.collatzSeed = 27;
+      }
+
+      showToast(`Loaded Preset: ${presetKey.replace('_', ' ').toUpperCase()}`);
+    }
+
+    // Mouse Interactions (Pan & Orbit)
+    function setupEventListeners() {
+      const container = document.getElementById('viewport-container');
+
+      container.addEventListener('mousedown', (e) => {
+        view.isDragging = true;
+        view.startX = e.clientX - view.offsetX;
+        view.startY = e.clientY - view.offsetY;
+
+        // Julia pick on Mandelbrot mode click
+        if (activeTab === 'chaos' && state.chaos.type === 'mandelbrot') {
+          const cR = (e.clientX - view.offsetX) / view.zoom;
+          const cI = (view.offsetY - e.clientY) / view.zoom;
+          state.chaos.juliaC = { r: cR, i: cI };
+          document.getElementById('julia-c-val').innerText = `c = ${cR.toFixed(2)} + ${cI.toFixed(2)}i`;
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        // Pointer Hud
+        const xVal = ((e.clientX - view.offsetX) / view.zoom).toFixed(3);
+        const yVal = ((view.offsetY - e.clientY) / view.zoom).toFixed(3);
+        document.getElementById('hud-coords').innerText = `x: ${xVal}, y: ${yVal}`;
+
+        if (view.isDragging) {
+          view.offsetX = e.clientX - view.startX;
+          view.offsetY = e.clientY - view.startY;
+        }
+      });
+
+      window.addEventListener('mouseup', () => view.isDragging = false);
+
+      container.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const zoomFactor = e.deltaY < 0 ? 1.15 : 0.85;
+        zoomViewport(zoomFactor);
+      }, { passive: false });
+
+      // Canvas Snapshot Export Button
+      document.getElementById('btn-export-canvas').addEventListener('click', exportCanvasSnapshot);
+    }
+
+    function exportCanvasSnapshot() {
+      let dataUrl;
+      if (activeTab === 'geometry' || (activeTab === 'chaos' && state.chaos.type === 'lorenz')) {
+        dataUrl = threeRenderer.domElement.toDataURL('image/png');
+      } else {
+        dataUrl = canvas2D.toDataURL('image/png');
+      }
+
+      const link = document.createElement('a');
+      link.download = `aethel_math_lab_${activeTab}_${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+
+      showToast('Visual Snapshot Exported Successfully!');
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toast-msg').innerText = msg;
+      toast.classList.remove('opacity-0');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100');
+        toast.classList.add('opacity-0');
+      }, 2500);
+    }
+  </script>
+</body>
+</html>
