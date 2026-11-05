@@ -9,7 +9,7 @@
 
 ---
 
-## 🔬 Overview
+## Overview
 
 **AETHEL Math Lab** is an interactive mathematical exploration suite designed for researchers, educators, students, and computational math enthusiasts. It transforms abstract theoretical constructs—such as non-linear attractor dynamics, complex domain colorings, and differential manifolds—into real-time visual sandbox environments.
 
@@ -17,11 +17,11 @@ Built using native modern web technologies (HTML5 Canvas, WebGL/Three.js, Tailwi
 
 ---
 
-## ✨ Features & Research Modules
+## Features & Research Modules
 
 AETHEL is organized into **five distinct theoretical research domains**:
 
-### 1. 🌊 Complex Analysis & Domain Coloring
+### 1.Complex Analysis & Domain Coloring
 * **Phase Portraits:** Maps phase angles to continuous HSL colors and modulus values to visual intensity.
 * **Logarithmic Modulus Gridlines:** Visualizes level sets and complex contours.
 * **Function Sandbox:**
@@ -30,7 +30,7 @@ AETHEL is organized into **five distinct theoretical research domains**:
   * Complex Trigonometric Functions ($\sin z$)
   * Polynomial Mappings ($z^n + c$)
 
-### 2. 🌀 Dynamical Systems & Chaos
+### 2.Dynamical Systems & Chaos
 * **3D Strange Attractors:** Live Runge-Kutta 4th Order ($\text{RK}4$) numerical integrator for differential flow equations:
   * **Lorenz System:** Rayleigh number ($\rho$), Prandtl number ($\sigma$), and geometry parameter ($\beta$) tuning.
 * **2D Non-Linear Maps:**
@@ -39,7 +39,7 @@ AETHEL is organized into **five distinct theoretical research domains**:
   * **Mandelbrot & Julia Sets:** High-iteration escape-time algorithm with smooth continuous coloring.
   * **Interactive Julia Picker:** Pick any point $c \in \mathbb{C}$ on the Mandelbrot set to render its corresponding Julia set in real-time.
 
-### 3. 🍩 Differential Geometry & Curved Spaces
+### 3.Differential Geometry & Curved Spaces
 * **Interactive 3D Manifolds:** Rendered with vertex shading calibrated for topological invariants:
   * **Torus** (Genus-1 compact surface)
   * **Pseudosphere / Tractroid** (Constant negative Gaussian curvature $K = -1$)
@@ -48,13 +48,13 @@ AETHEL is organized into **five distinct theoretical research domains**:
   * **Hyperbolic Saddle Point**
 * **Geodesic Trajectories:** Animated numeric solvers tracking geodesic lines along intrinsic metric tensors.
 
-### 4. 📐 Linear Algebra & SVD Transformation
+### 4.Linear Algebra & SVD Transformation
 * **Interactive $2 \times 2$ Matrix Sandbox:** Live coefficient manipulation ($a, b, c, d$).
 * **Singular Value Decomposition (SVD):** Visualizes unit circle deformation into hyper-ellipses under matrix transformations.
 * **Eigenvector & Spectrum Analysis:** Real and complex eigenvalue ($\lambda_1, \lambda_2$) line overlays.
 * **Matrix Powers ($A^k$):** Dynamic trajectory warping under matrix exponentiation.
 
-### 5. 🔢 Experimental Number Theory
+### 5.Experimental Number Theory
 * **Prime Spirals:**
   * **Ulam Spiral:** Square lattice visualizer highlighting diagonal prime alignments.
   * **Sacks Spiral:** Archimedean spiral tracking prime distribution over continuous curves.
@@ -63,7 +63,7 @@ AETHEL is organized into **five distinct theoretical research domains**:
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Option 1: Direct File Launch (No Server Needed)
 1. Clone or download the repository:
@@ -83,7 +83,7 @@ Navigate to `http://localhost:8000/math_lab.html`.
 
 ---
 
-## 🛠️ Built With
+## Built With
 
 * **Rendering Engine:** Native 2D Canvas API (Fast ImageData manipulation for domain coloring & fractals)
 * **3D Engine:** [Three.js (r128)](https://threejs.org/) + OrbitControls
@@ -93,7 +93,7 @@ Navigate to `http://localhost:8000/math_lab.html`.
 
 ---
 
-## 📚 Theorem Presets Included
+## Theorem Presets Included
 
 The built-in **Theorem Preset Selector** lets you jump straight to historic mathematical phenomena:
 * **Riemann Zeta Polynomial Truncation:** Observe pole formation along the critical strip.
@@ -105,7 +105,7 @@ The built-in **Theorem Preset Selector** lets you jump straight to historic math
 
 ---
 
-## 📄 License
+## License
 
 Distributed under the **MIT License**. See `LICENSE` for details.
 
